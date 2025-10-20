@@ -59,6 +59,7 @@ class AttendanceController extends Controller
 
         return inertia('Admin/Dashboard', [
             'attendances' => $attendances,
+            'filters' => [],
         ]);
     }
 

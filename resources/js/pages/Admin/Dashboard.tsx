@@ -55,13 +55,14 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
-        router.post(
-            route('admin.attendance.filter'),
-            {
-                name: searchName,
-                date_from: dateFrom,
-                date_to: dateTo,
-            },
+        const params = new URLSearchParams();
+        if (searchName) params.append('name', searchName);
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+
+        router.get(
+            route('admin.attendance.filter') + (params.toString() ? '?' + params.toString() : ''),
+            {},
             {
                 preserveState: true,
                 preserveScroll: true,
@@ -74,8 +75,8 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
         setDateFrom('');
         setDateTo('');
 
-        router.post(
-            route('admin.attendance.filter'),
+        router.get(
+            route('admin.dashboard'),
             {},
             {
                 preserveState: true,
@@ -330,11 +331,6 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
                                             <tr key={attendance.id} className="hover:bg-gray-50">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="flex items-center">
-                                                        <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                                            <span className="text-white font-semibold text-sm">
-                                                                {attendance.name.charAt(0).toUpperCase()}
-                                                            </span>
-                                                        </div>
                                                         <div className="ml-4">
                                                             <div className="text-sm font-medium text-gray-900">
                                                                 {attendance.name}
@@ -432,9 +428,22 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
                                     <div className="flex space-x-2">
                                         {attendances.current_page > 1 && (
                                             <button
-                                                onClick={() => router.get(
-                                                    route('admin.dashboard', { page: attendances.current_page - 1 })
-                                                )}
+                                                onClick={() => {
+                                                    const params = new URLSearchParams();
+                                                    if (searchName) params.append('name', searchName);
+                                                    if (dateFrom) params.append('date_from', dateFrom);
+                                                    if (dateTo) params.append('date_to', dateTo);
+                                                    params.append('page', (attendances.current_page - 1).toString());
+
+                                                    router.get(
+                                                        route('admin.attendance.filter') + '?' + params.toString(),
+                                                        {},
+                                                        {
+                                                            preserveState: true,
+                                                            preserveScroll: true,
+                                                        }
+                                                    );
+                                                }}
                                                 className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                                             >
                                                 Previous
@@ -442,9 +451,22 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
                                         )}
                                         {attendances.current_page < attendances.last_page && (
                                             <button
-                                                onClick={() => router.get(
-                                                    route('admin.dashboard', { page: attendances.current_page + 1 })
-                                                )}
+                                                onClick={() => {
+                                                    const params = new URLSearchParams();
+                                                    if (searchName) params.append('name', searchName);
+                                                    if (dateFrom) params.append('date_from', dateFrom);
+                                                    if (dateTo) params.append('date_to', dateTo);
+                                                    params.append('page', (attendances.current_page + 1).toString());
+
+                                                    router.get(
+                                                        route('admin.attendance.filter') + '?' + params.toString(),
+                                                        {},
+                                                        {
+                                                            preserveState: true,
+                                                            preserveScroll: true,
+                                                        }
+                                                    );
+                                                }}
                                                 className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                                             >
                                                 Next
