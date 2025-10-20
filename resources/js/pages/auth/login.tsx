@@ -1,113 +1,135 @@
 import InputError from '@/components/input-error';
-import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
-import AuthLayout from '@/layouts/auth-layout';
-import { register } from '@/routes';
+import AuthSimpleLayout from '@/layouts/auth/auth-simple-layout';
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 import { Form, Head } from '@inertiajs/react';
+import { Lock, Mail } from 'lucide-react';
 
 interface LoginProps {
     status?: string;
-    canResetPassword: boolean;
 }
 
-export default function Login({ status, canResetPassword }: LoginProps) {
+export default function Login({ status }: LoginProps) {
     return (
-        <AuthLayout
-            title="Log in to your account"
-            description="Enter your email and password below to log in"
+        <AuthSimpleLayout
+            title="Masuk sebagai admin"
+            description="Masikan Email dan Password dibawah ini"
         >
             <Head title="Log in" />
 
-            <Form
-                {...store.form()}
-                resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
-            >
-                {({ processing, errors }) => (
-                    <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    name="email"
-                                    required
-                                    autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
-                                />
-                                <InputError message={errors.email} />
-                            </div>
-
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
-                                    {canResetPassword && (
-                                        <TextLink
-                                            href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
-                                        >
-                                            Forgot password?
-                                        </TextLink>
-                                    )}
-                                </div>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    name="password"
-                                    required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
-                                />
-                                <InputError message={errors.password} />
-                            </div>
-
+            <div className="min-h-screen bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 relative">
+                {/* Header */}
+                <div className="relative bg-white/10 backdrop-blur-lg border-b border-white/20">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="flex justify-between items-center h-16">
                             <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-2 rounded-lg shadow-md">
+                                    <Lock className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-semibold text-white">Login Admin</h1>
+                                </div>
                             </div>
-
-                            <Button
-                                type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
-                                disabled={processing}
-                                data-test="login-button"
-                            >
-                                {processing && <Spinner />}
-                                Log in
-                            </Button>
                         </div>
-
-                        <div className="text-center text-sm text-muted-foreground">
-                            Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={5}>
-                                Sign up
-                            </TextLink>
-                        </div>
-                    </>
-                )}
-            </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
+                    </div>
                 </div>
-            )}
-        </AuthLayout>
+
+                {/* Main Content */}
+                <div className="relative max-w-md mx-auto px-4 py-8">
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                        {/* Form Header */}
+                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-6">
+                            <div className="text-center">
+                                <h2 className="text-2xl font-semibold text-white">Selamat Datang</h2>
+                                <p className="text-green-100 mt-1">Silakan login untuk melanjutkan</p>
+                            </div>
+                        </div>
+
+                        {/* Form Body */}
+                        <Form
+                            {...store.form()}
+                            resetOnSuccess={['password']}
+                            className="p-6 space-y-5"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    {/* Email Input */}
+                                    <div>
+                                        <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Email
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                name="email"
+                                                required
+                                                autoFocus
+                                                tabIndex={1}
+                                                autoComplete="email"
+                                                placeholder="email@example.com"
+                                                className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors"
+                                            />
+                                        </div>
+                                        <InputError message={errors.email} />
+                                    </div>
+
+                                    {/* Password Input */}
+                                    <div>
+                                        <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Password
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id="password"
+                                                type="password"
+                                                name="password"
+                                                required
+                                                tabIndex={2}
+                                                autoComplete="current-password"
+                                                placeholder="Password"
+                                                className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors"
+                                            />
+                                        </div>
+                                        <InputError message={errors.password} />
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <div className="pt-4">
+                                        <Button
+                                            type="submit"
+                                            className="w-full bg-green-600 text-white font-medium py-3 px-6 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            tabIndex={4}
+                                            disabled={processing}
+                                            data-test="login-button"
+                                        >
+                                            {processing ? (
+                                                <span className="flex items-center justify-center space-x-2">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                                    <span>Logging in...</span>
+                                                </span>
+                                            ) : (
+                                                <span className='text-white'>Login</span>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </div>
+                </div>
+
+                {/* Status Message */}
+                {status && (
+                    <div className="fixed top-4 right-4 z-50">
+                        <div className="bg-green-500/90 text-white border border-green-400 rounded-lg shadow-lg backdrop-blur-lg p-4">
+                            <p className="text-sm font-medium">{status}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </AuthSimpleLayout>
     );
 }

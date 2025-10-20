@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Camera, MapPin, Upload, User, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Camera, Clock, AlertCircle, X, ExternalLink } from 'lucide-react';
+import { store } from '@/routes/attendance';
 
 interface FormData {
     name: string;
@@ -20,11 +21,18 @@ interface FormErrors {
     notes?: string[];
 }
 
+interface Toast {
+    id: string;
+    message: string;
+    type: 'error' | 'success' | 'warning';
+}
+
 export default function AttendanceForm() {
     const [locationLoading, setLocationLoading] = useState(false);
     const [locationError, setLocationError] = useState('');
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [toasts, setToasts] = useState<Toast[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const { data, setData, post, processing, errors, reset } = useForm<FormData>({
@@ -38,6 +46,22 @@ export default function AttendanceForm() {
     useEffect(() => {
         getCurrentLocation();
     }, []);
+
+    const showToast = (message: string, type: 'error' | 'success' | 'warning' = 'error') => {
+        const id = Date.now().toString();
+        const newToast: Toast = { id, message, type };
+
+        setToasts(prev => [...prev, newToast]);
+
+        // Auto remove toast after 5 seconds
+        setTimeout(() => {
+            setToasts(prev => prev.filter(toast => toast.id !== id));
+        }, 5000);
+    };
+
+    const removeToast = (id: string) => {
+        setToasts(prev => prev.filter(toast => toast.id !== id));
+    };
 
     const getCurrentLocation = () => {
         setLocationLoading(true);
@@ -91,20 +115,53 @@ export default function AttendanceForm() {
         }
     };
 
+    const validateForm = (): string[] => {
+        const errors: string[] = [];
+
+        // Validasi nama
+        if (!data.name.trim()) {
+            errors.push('Nama harus diisi');
+        } else if (data.name.trim().length < 3) {
+            errors.push('Nama minimal 3 karakter');
+        }
+
+        // Validasi foto
+        if (!data.photo) {
+            errors.push('Foto harus diupload');
+        }
+
+        return errors;
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Validasi lokasi
         if (!location) {
             setLocationError('Lokasi diperlukan untuk absensi. Mohon izinkan akses lokasi.');
             return;
         }
 
-        post(route('attendance.store'), {
+        // Validasi form fields
+        const validationErrors = validateForm();
+
+        if (validationErrors.length > 0) {
+            validationErrors.forEach(error => {
+                showToast(error, 'error');
+            });
+            return;
+        }
+
+        post(store().url, {
             onSuccess: () => {
+                showToast('Absensi berhasil disimpan!', 'success');
                 reset();
                 setPhotoPreview(null);
                 setLocation(null);
                 getCurrentLocation();
+            },
+            onError: (errors) => {
+                showToast('Terjadi kesalahan saat menyimpan data', 'error');
             },
         });
     };
@@ -113,64 +170,57 @@ export default function AttendanceForm() {
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     };
 
+    const getGoogleMapsUrl = (lat: number, lng: number) => {
+        return `https://www.google.com/maps?q=${lat},${lng}&z=18`;
+    };
+
     return (
         <>
             <Head title="Form Absensi" />
 
-            <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+            <div className="min-h-screen bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 relative">
                 {/* Header */}
-                <div className="bg-white shadow-sm border-b border-gray-100">
+                <div className="relative bg-white/10 backdrop-blur-lg border-b border-white/20">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center h-16">
                             <div className="flex items-center space-x-3">
-                                <div className="bg-blue-600 p-2 rounded-lg">
-                                    <Clock className="w-6 h-6 text-white" />
+                                <div className="bg-gradient-to-r from-green-600 to-emerald-500 p-2 rounded-lg shadow-md">
+                                    <Clock className="w-5 h-5 text-white" />
                                 </div>
-                                <h1 className="text-xl font-bold text-gray-900">Sistem Absensi Digital</h1>
+                                <div>
+                                    <h1 className="text-xl font-semibold text-white">Absensi Kehadiran</h1>
+                                </div>
                             </div>
-                            <Link
-                                href="/admin/login"
-                                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                            >
-                                Admin Login
-                            </Link>
                         </div>
                     </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                <div className="relative max-w-md mx-auto px-4 py-8">
+                    <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                         {/* Form Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
-                            <div className="flex items-center space-x-3">
-                                <User className="w-8 h-8 text-white" />
-                                <div>
-                                    <h2 className="text-2xl font-bold text-white">Form Absensi</h2>
-                                    <p className="text-blue-100 text-sm mt-1">Isi form di bawah untuk melakukan absensi</p>
-                                </div>
+                        <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-6">
+                            <div className="text-center">
+                                {/* <h2 className="text-2xl font-semibold text-white">Form Attendance</h2> */}
                             </div>
                         </div>
 
                         {/* Form Body */}
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5" noValidate>
                             {/* Name Input */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    <User className="inline w-4 h-4 mr-1" />
-                                    Nama Lengkap
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Nama
                                 </label>
                                 <input
                                     type="text"
                                     value={data.name}
                                     onChange={(e) => setData('name', e.target.value)}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                    placeholder="Masukkan nama lengkap Anda"
-                                    required
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg transition-colors"
+                                    placeholder="Masukan Nama Anda"
                                 />
                                 {errors.name && (
-                                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                    <p className="mt-1 text-sm text-red-500">
                                         {errors.name[0]}
                                     </p>
                                 )}
@@ -178,40 +228,35 @@ export default function AttendanceForm() {
 
                             {/* Photo Upload */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    <Camera className="inline w-4 h-4 mr-1" />
-                                    Foto Selfie
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Foto
                                 </label>
-                                <div className="flex items-center space-x-4">
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="relative group cursor-pointer"
-                                    >
-                                        {photoPreview ? (
+                                <div className="border border-gray-300 rounded-lg p-4">
+                                    {photoPreview ? (
+                                        <div className="flex items-center space-x-4">
                                             <img
                                                 src={photoPreview}
                                                 alt="Preview"
-                                                className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200 group-hover:border-blue-400 transition-all"
+                                                className="w-20 h-20 object-cover rounded-lg border"
                                             />
-                                        ) : (
-                                            <div className="w-32 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center group-hover:bg-gray-50 transition-all">
-                                                <Camera className="w-8 h-8 text-gray-400 group-hover:text-gray-500" />
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                                            <Upload className="w-6 h-6 text-white" />
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="px-4 py-2 text-green-600 hover:text-green-700 text-sm font-medium"
+                                            >
+                                                Ganti Foto
+                                            </button>
                                         </div>
-                                    </div>
-                                    <div className="flex-1">
-                                        <button
-                                            type="button"
+                                    ) : (
+                                        <div
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                            className="text-center py-8 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
                                         >
-                                            Pilih Foto
-                                        </button>
-                                        <p className="text-xs text-gray-500 mt-1">Format: JPEG, PNG, JPG, GIF (Max: 5MB)</p>
-                                    </div>
+                                            <Camera className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                            <p className="text-sm text-gray-600">Klik untuk upload foto</p>
+                                            <p className="text-xs text-gray-500 mt-1">JPEG, PNG, JPG (max. 5MB)</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <input
                                     ref={fileInputRef}
@@ -219,83 +264,87 @@ export default function AttendanceForm() {
                                     accept="image/*"
                                     onChange={handlePhotoChange}
                                     className="hidden"
-                                    required
                                 />
                                 {errors.photo && (
-                                    <p className="mt-1 text-sm text-red-600 flex items-center">
-                                        <AlertCircle className="w-4 h-4 mr-1" />
-                                        {errors.photo[0]}
+                                    <p className="mt-1 text-sm text-red-500">
+                                        Format foto tidak sesuai
                                     </p>
                                 )}
                             </div>
-
+                            
                             {/* Location */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    <MapPin className="inline w-4 h-4 mr-1" />
-                                    Lokasi GPS
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Lokasi
                                 </label>
-                                {locationLoading ? (
-                                    <div className="flex items-center space-x-2 text-blue-600">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                        <span className="text-sm">Mendapatkan lokasi...</span>
-                                    </div>
-                                ) : locationError ? (
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                                        <p className="text-sm text-red-600 flex items-center">
-                                            <AlertCircle className="w-4 h-4 mr-1" />
-                                            {locationError}
-                                        </p>
-                                        <button
-                                            type="button"
-                                            onClick={getCurrentLocation}
-                                            className="mt-2 text-sm text-red-600 underline hover:text-red-700"
-                                        >
-                                            Coba Lagi
-                                        </button>
-                                    </div>
-                                ) : location ? (
-                                    <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                        <p className="text-sm text-green-700 flex items-center">
-                                            <CheckCircle className="w-4 h-4 mr-1" />
-                                            Lokasi berhasil didapatkan: {formatCoordinates(location.lat, location.lng)}
-                                        </p>
-                                        <a
-                                            href={`https://www.google.com/maps?q=${location.lat},${location.lng}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-blue-600 hover:text-blue-700 underline mt-1 inline-block"
-                                        >
-                                            Lihat di Google Maps
-                                        </a>
-                                    </div>
-                                ) : null}
+                                <div className="border border-gray-300 rounded-lg p-4">
+                                    {locationLoading ? (
+                                        <div className="flex items-center justify-center space-x-2 py-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+                                            <span className="text-sm text-gray-600">Mendapatkan Lokasi...</span>
+                                        </div>
+                                    ) : locationError ? (
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                                            <p className="text-sm text-red-700 mb-2">{locationError}</p>
+                                            <button
+                                                type="button"
+                                                onClick={getCurrentLocation}
+                                                className="text-sm text-red-600 hover:text-red-700 font-medium"
+                                            >
+                                                Coba Lagi
+                                            </button>
+                                        </div>
+                                    ) : location ? (
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <p className="text-sm text-green-700 mb-2">Lokasi berhasil didapatkan!</p>
+                                                    <p className="text-xs text-gray-600 font-mono">
+                                                        <a
+                                                            href={getGoogleMapsUrl(location.lat, location.lng)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-xs text-green-600 hover:text-green-700 font-medium transition-colors"
+                                                            title="Lihat di Google Maps"
+                                                        >
+                                                            <ExternalLink className="w-3 h-3" />
+                                                            <span>Lihat Lokasi</span>
+                                                        </a>
+                                                    </p>
+                                                </div>
+                                                
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                </div>
                                 {errors.latitude && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.latitude[0]}</p>
+                                    <p className="mt-1 text-sm text-red-500">{errors.latitude[0]}</p>
                                 )}
                                 {errors.longitude && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.longitude[0]}</p>
+                                    <p className="mt-1 text-sm text-red-500">{errors.longitude[0]}</p>
                                 )}
                             </div>
 
                             {/* Notes */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Catatan (Opsional)
                                 </label>
-                                <textarea
-                                    value={data.notes}
-                                    onChange={(e) => setData('notes', e.target.value)}
-                                    rows={3}
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                                    placeholder="Tambahkan catatan jika diperlukan..."
-                                    maxLength={1000}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    {data.notes.length}/1000 karakter
-                                </p>
+                                <div className="relative">
+                                    <textarea
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
+                                        rows={3}
+                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none"
+                                        placeholder="Tambah catatan jika dibutuhkan..."
+                                        maxLength={1000}
+                                    />
+                                    <div className="absolute bottom-2 right-2 text-xs text-gray-500">
+                                        {data.notes.length}/1000
+                                    </div>
+                                </div>
                                 {errors.notes && (
-                                    <p className="mt-1 text-sm text-red-600">{errors.notes[0]}</p>
+                                    <p className="mt-1 text-sm text-red-500">{errors.notes[0]}</p>
                                 )}
                             </div>
 
@@ -304,35 +353,49 @@ export default function AttendanceForm() {
                                 <button
                                     type="submit"
                                     disabled={processing || locationLoading || !location}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                                    className="w-full bg-green-600 text-white font-medium py-3 px-6 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     {processing ? (
-                                        <div className="flex items-center justify-center space-x-2">
-                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        <span className="flex items-center justify-center space-x-2">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparen"></div>
                                             <span>Menyimpan...</span>
-                                        </div>
+                                        </span>
                                     ) : (
-                                        <span>Absen Sekarang</span>
+                                        <span className='text-white'>Simpan</span>
                                     )}
                                 </button>
                             </div>
                         </form>
                     </div>
+                </div>
 
-                    {/* Info Card */}
-                    <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <div className="flex items-start space-x-3">
-                            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-                            <div>
-                                <h3 className="text-sm font-semibold text-blue-800">Penting:</h3>
-                                <ul className="text-sm text-blue-700 mt-1 space-y-1">
-                                    <li>• Pastikan Anda mengizinkan akses lokasi pada browser</li>
-                                    <li>• Foto selfie harus jelas dan terlihat wajah</li>
-                                    <li>• Pastikan koneksi internet stabil</li>
-                                </ul>
+                {/* Toast Container */}
+                <div className="fixed top-4 right-4 z-50 space-y-2">
+                    {toasts.map((toast, index) => (
+                        <div
+                            key={index}
+                            className={`relative flex items-start p-4 rounded-lg shadow-lg backdrop-blur-lg transform transition-all duration-300 animate-in slide-in-from-right ${
+                                toast.type === 'error'
+                                    ? 'bg-red-500/90 text-white border border-red-400'
+                                    : toast.type === 'success'
+                                    ? 'bg-green-500/90 text-white border border-green-400'
+                                    : 'bg-yellow-500/90 text-white border border-yellow-400'
+                            }`}
+                        >
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{toast.message}</p>
+                                </div>
+                                <button
+                                    onClick={() => removeToast(toast.id)}
+                                    className="flex-shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </>

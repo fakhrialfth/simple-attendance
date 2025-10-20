@@ -55,24 +55,10 @@ export default function AttendanceSuccess() {
                                     <ArrowLeft className="w-4 h-4" />
                                     <span>Absen Lagi</span>
                                 </Link>
-
-                                <Link
-                                    href="/"
-                                    className="w-full inline-flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 font-medium py-3 px-6 rounded-lg hover:bg-gray-200 transition-colors"
-                                >
-                                    <Home className="w-4 h-4" />
-                                    <span>Kembali ke Beranda</span>
-                                </Link>
                             </div>
                         </div>
                     </div>
 
-                    {/* Additional Info */}
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-500">
-                            Jika ada pertanyaan, hubungi administrator sistem.
-                        </p>
-                    </div>
                 </div>
             </div>
         </>

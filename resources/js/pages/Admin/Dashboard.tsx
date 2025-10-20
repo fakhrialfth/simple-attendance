@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { route } from 'ziggy-js';
 import {
     Users,
     Calendar,
@@ -9,8 +10,6 @@ import {
     Search,
     MapPin,
     Clock,
-    Camera,
-    Download,
     Eye,
     LogOut,
     BarChart3,
@@ -21,8 +20,8 @@ interface Attendance {
     id: number;
     name: string;
     photo_path: string;
-    latitude: number;
-    longitude: number;
+    latitude: number | string | null;
+    longitude: number | string | null;
     google_maps_link: string;
     notes?: string;
     checked_in_at: string;
@@ -96,8 +95,16 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
         });
     };
 
-    const formatCoordinates = (lat: number, lng: number) => {
-        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    const formatCoordinates = (lat: number | string | null | undefined, lng: number | string | null | undefined) => {
+        const latNum = typeof lat === 'string' ? parseFloat(lat) : lat;
+        const lngNum = typeof lng === 'string' ? parseFloat(lng) : lng;
+
+        if (latNum === null || latNum === undefined || lngNum === null || lngNum === undefined ||
+            isNaN(latNum) || isNaN(lngNum)) {
+            return 'Koordinat tidak tersedia';
+        }
+
+        return `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`;
     };
 
     return (
@@ -106,34 +113,37 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
 
             <div className="min-h-screen bg-gray-50">
                 {/* Header */}
-                <header className="bg-white shadow-sm border-b border-gray-200">
+                <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="flex justify-between items-center h-16">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                                    <BarChart3 className="w-6 h-6 text-white" />
+                            {/* Logo and Title */}
+                            <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-2 rounded-lg flex-shrink-0">
+                                    <BarChart3 className="w-5 h-5 text-white sm:w-6 sm:h-6" />
                                 </div>
-                                <div>
-                                    <h1 className="text-xl font-bold text-gray-900">Dashboard Admin</h1>
-                                    <p className="text-sm text-gray-500">Sistem Absensi Digital</p>
+                                <div className="min-w-0">
+                                    <h1 className="text-lg font-bold text-gray-900 sm:text-xl truncate">Dashboard Admin</h1>
+                                    <p className="text-xs text-gray-500 sm:text-sm hidden sm:block">Sistem Absensi Digital</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center space-x-4">
+                            {/* Navigation Actions */}
+                            <div className="flex items-center space-x-2 sm:space-x-4">
                                 <Link
                                     href="/absen"
-                                    className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                                    className="text-xs text-gray-600 hover:text-gray-900 transition-colors px-2 py-1 rounded-lg hover:bg-gray-50 sm:text-sm sm:px-3 sm:py-2"
                                 >
-                                    Lihat Form Absensi
+                                    <span className="hidden sm:inline">Lihat Form Absensi</span>
+                                    <span className="sm:hidden">Form</span>
                                 </Link>
                                 <Link
                                     href="/logout"
                                     method="post"
                                     as="button"
-                                    className="flex items-center space-x-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
+                                    className="flex items-center space-x-1 text-xs text-gray-600 hover:text-red-600 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 sm:text-sm sm:space-x-2 sm:px-3 sm:py-2"
                                 >
-                                    <LogOut className="w-4 h-4" />
-                                    <span>Logout</span>
+                                    <LogOut className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">Logout</span>
                                 </Link>
                             </div>
                         </div>
@@ -361,14 +371,16 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
                                                                 {formatCoordinates(attendance.latitude, attendance.longitude)}
                                                             </span>
                                                         </div>
-                                                        <a
-                                                            href={attendance.google_maps_link}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-xs text-blue-600 hover:text-blue-700 underline"
-                                                        >
-                                                            Lihat di Maps
-                                                        </a>
+                                                        {attendance.google_maps_link && (
+                                                            <a
+                                                                href={attendance.google_maps_link}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs text-blue-600 hover:text-blue-700 underline"
+                                                            >
+                                                                Lihat di Maps
+                                                            </a>
+                                                        )}
                                                     </div>
                                                 </td>
 
@@ -379,13 +391,15 @@ export default function AdminDashboard({ attendances, filters = {} }: DashboardP
                                                 </td>
 
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <button
-                                                        onClick={() => window.open(`/storage/${attendance.photo_path}`, '_blank')}
-                                                        className="text-blue-600 hover:text-blue-900 mr-3"
-                                                        title="Lihat Foto"
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
+                                                    {attendance.photo_path && (
+                                                        <button
+                                                            onClick={() => window.open(`/storage/${attendance.photo_path}`, '_blank')}
+                                                            className="text-blue-600 hover:text-blue-900 mr-3"
+                                                            title="Lihat Foto"
+                                                        >
+                                                            <Eye className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))
